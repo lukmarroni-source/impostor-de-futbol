@@ -28,11 +28,11 @@ sudo usermod -aG docker $USER
 
 ```bash
 cd ~
-git clone https://github.com/USUARIO/impostor-de-futbol.git
+git clone https://github.com/lukmarroni-source/impostor-de-futbol.git
 cd impostor-de-futbol
 ```
 
-> Reemplazá `USUARIO` con el nombre de usuario de GitHub real.
+> Reemplazá `lukmarroni-source` con el nombre de usuario de GitHub real.
 
 ---
 
@@ -151,7 +151,7 @@ docker compose down && docker compose up -d --build
 
 ```bash
 cd ~
-git clone https://github.com/USUARIO/impostor-de-futbol.git
+git clone https://github.com/lukmarroni-source/impostor-de-futbol.git
 cd impostor-de-futbol
 sed -i 's/"8080:80"/"80:80"/' docker-compose.yml
 docker compose up -d --build
