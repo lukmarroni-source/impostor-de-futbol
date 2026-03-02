@@ -9,7 +9,7 @@ function connectSocket() {
   if (socket && socket.connected) return;
 
   // Connect to same host (nginx proxies /socket.io/ to server)
-  socket = io({ transports: ['websocket', 'polling'] });
+  socket = io({ transports: ['polling', 'websocket'] });
 
   socket.on('connect', () => {
     console.log('[socket] Connected:', socket.id);
