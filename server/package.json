@@ -1,0 +1,14 @@
+{
+  "name": "impostor-futbol-server",
+  "version": "1.0.0",
+  "description": "Server for Impostor de Futbol online multiplayer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "cors": "^2.8.5"
+  }
+}

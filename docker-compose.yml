@@ -6,3 +6,9 @@ services:
     volumes:
       - ./src:/usr/share/nginx/html
     restart: unless-stopped
+
+  server:
+    build: ./server
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
