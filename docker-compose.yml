@@ -1,8 +1,9 @@
+version: '3'
 services:
   web:
     build: .
     ports:
-      - "8080:80"
+      - "8011:80"
     volumes:
       - ./src:/usr/share/nginx/html
     restart: unless-stopped
