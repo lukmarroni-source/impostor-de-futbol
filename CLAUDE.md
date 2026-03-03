@@ -4,54 +4,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-"Impostor de Fútbol" is a local multiplayer party game (pass-the-device) inspired by Among Us, themed around football/soccer players. It's a vanilla JavaScript SPA with no build tools or npm dependencies. Bilingual (Spanish/English).
+Impostor de Fútbol is a mobile-first web party game (Spanish/English). Players pass a single device around — one or more players are "impostors" who don't know the secret footballer, while others do. After discussion and voting, the group tries to eliminate the impostor(s).
 
-## Development & Deployment
+## Running Locally
 
-There is no build step, test runner, or linter. The app is pure HTML/CSS/JS served as static files.
+No build step required — this is a static HTML/CSS/JS project.
 
-```bash
-# Run locally with Docker
-docker compose up -d --build
-
-# Development with hot reload (volume-mounted)
-# Default port: 8080 → http://localhost:8080
-# Production: change port mapping in docker-compose.yml to 80:80
-
-# Rebuild after changes
-docker compose up -d --build
-
-# View logs
-docker compose logs -f
+**Option A — Open directly:**
+```
+src/index.html   # open in browser
 ```
 
-Alternatively, open `src/index.html` directly in a browser for quick testing (no server required).
+**Option B — Docker (recommended for prod-like environment):**
+```bash
+docker compose up -d --build    # serves on http://localhost:8011
+docker compose down              # stop
+docker compose logs -f           # view logs
+```
 
 ## Architecture
 
-### Entry Point & Script Load Order
+Single-page application with no framework. All screens are `<div>` sections in `index.html` toggled via `display: none/flex`.
 
-`src/index.html` loads scripts in this order (order matters):
-1. **`src/js/i18n.js`** — Translation system with `t(key)` function. Uses `data-i18n` HTML attributes and `localStorage` for language persistence.
-2. **`src/js/players-db.js`** — Database of 30 footballers, each with `nombre`, `equipo`, `nacionalidad`, `posicion`, and 5 `pistas` (hints).
-3. **`src/js/game.js`** — `Game` class managing state: player setup, role assignment (impostor vs normal), voting, and results. Two modes: Classic (fixed impostor count) and Chaos (random count).
-4. **`src/js/app.js`** — UI controller handling screen navigation (`showScreen(id)`), text updates (`updateTexts()`), name input, role reveal flow, voting flow, and results display.
+**Script load order matters:** `i18n.js` → `players-db.js` → `game.js` → `app.js`
 
-### Game Flow
+| File | Responsibility |
+|------|---------------|
+| `src/js/game.js` | `Game` class — core logic: role assignment, voting, results calculation |
+| `src/js/app.js` | UI/screen navigation, DOM manipulation, timer, event handlers |
+| `src/js/players-db.js` | Database of 33 footballers with name, team, nationality, position, and 5 clues each |
+| `src/js/i18n.js` | Spanish/English translations (~70 keys), persisted in `localStorage` |
+| `src/css/styles.css` | All styling — mobile-first, responsive (400px–800px+ heights) |
 
-Splash → Home → Settings/Setup → Player Names → Role Reveal (pass device) → Discussion (2min timer) → Voting (pass device) → Results → Play Again/Menu
+**Global state:** `window.game` is the singleton `Game` instance used by `app.js`.
 
-### Screen System
+## Game Flow
 
-UI uses screen-based navigation with CSS class toggling (`hidden`/`active`). Screen IDs: `screen-splash`, `screen-home`, `screen-settings`, `screen-setup`, `screen-names`, `screen-role-pass`, `screen-discussion`, `screen-vote-pass`, `screen-results`.
+Splash → Home → Setup (players 3-10, mode, impostors) → Names → Role Reveal (pass device) → Discussion (2min timer) → Voting (pass device) → Results
 
-### Internationalization
+Two modes: **Classic** (fixed impostor count) and **Chaos** (random 1-to-all impostors).
 
-All user-facing strings go through `t(key)` from `i18n.js`. The `TRANSLATIONS` object holds ES/EN pairs. HTML elements use `data-i18n="key"` for automatic translation via `updateTexts()`.
+## Design Tokens
 
-### Styling
+- Primary green: `#0d6b2e`, Accent yellow: `#ffe135`, Orange: `#e67e22`
+- Fonts: **Bangers** (titles), **Nunito** (body) via Google Fonts
 
-`src/css/styles.css` — Football-field green theme (#0d6b2e), Google Fonts (Bangers for headings, Nunito for body), mobile-first responsive design (breakpoint at 400px), CSS animations for transitions.
+## Internationalization
+
+All UI text uses `data-i18n` attributes on HTML elements. Translations live in `i18n.js` as key-value maps. Language preference is stored in `localStorage`.
 
 ## Infrastructure
 

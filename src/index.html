@@ -29,8 +29,202 @@
                 <h1 data-i18n="title">IMPOSTOR DE FÚTBOL</h1>
             </div>
             <div class="menu-buttons">
-                <button class="btn btn-primary btn-large" onclick="openSetup()" data-i18n="start">EMPEZAR</button>
+                <button class="btn btn-primary btn-large" onclick="showModeSelect()" data-i18n="start">EMPEZAR</button>
                 <button class="btn btn-secondary" onclick="openSettings()" data-i18n="settings">CONFIGURACIÓN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODE SELECT SCREEN ===== -->
+    <div id="screen-mode-select" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="selectMode">Elegir modo</h2>
+            <div class="menu-buttons">
+                <button class="btn btn-primary btn-large" onclick="selectGameMode('local')">
+                    <span data-i18n="mode_local">JUGAR LOCAL</span>
+                </button>
+                <button class="btn btn-primary btn-large btn-online" onclick="selectGameMode('online')">
+                    <span data-i18n="mode_online">JUGAR ONLINE</span>
+                </button>
+            </div>
+            <button class="btn btn-secondary" onclick="initHome()" data-i18n="back">VOLVER</button>
+        </div>
+    </div>
+
+    <!-- ===== ONLINE MENU SCREEN ===== -->
+    <div id="screen-online-menu" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="mode_online">JUGAR ONLINE</h2>
+            <div class="menu-buttons">
+                <button class="btn btn-primary btn-large" onclick="showCreateRoom()" data-i18n="create_room">CREAR SALA</button>
+                <button class="btn btn-primary btn-large" onclick="showJoinRoom()" data-i18n="join_room">UNIRSE A SALA</button>
+            </div>
+            <button class="btn btn-secondary" onclick="showModeSelect()" data-i18n="back">VOLVER</button>
+        </div>
+    </div>
+
+    <!-- ===== CREATE ROOM SCREEN ===== -->
+    <div id="screen-create-room" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="create_room">CREAR SALA</h2>
+
+            <div class="setup-group">
+                <label data-i18n="your_name">Tu nombre</label>
+                <input type="text" id="host-name-input" class="online-input" placeholder="Tu nombre" maxlength="20">
+            </div>
+
+            <div class="setup-group">
+                <label data-i18n="numPlayers">Número de jugadores</label>
+                <div class="counter">
+                    <button class="btn btn-counter" onclick="changeOnlineMaxPlayers(-1)">−</button>
+                    <span id="online-max-players" class="counter-value">6</span>
+                    <button class="btn btn-counter" onclick="changeOnlineMaxPlayers(1)">+</button>
+                </div>
+            </div>
+
+            <div class="setup-group" id="online-impostor-controls">
+                <label data-i18n="numImpostors">Cantidad de impostores</label>
+                <div class="counter">
+                    <button class="btn btn-counter" onclick="changeOnlineNumImpostors(-1)">−</button>
+                    <span id="online-num-impostors" class="counter-value">1</span>
+                    <button class="btn btn-counter" onclick="changeOnlineNumImpostors(1)">+</button>
+                </div>
+            </div>
+
+            <div class="setup-group">
+                <label data-i18n="gameMode">Modo de juego</label>
+                <div class="mode-buttons">
+                    <button class="btn mode-btn selected" data-mode="classic" onclick="selectOnlineMode('classic')">
+                        <strong data-i18n="classic">Clásico</strong>
+                        <small data-i18n="modeClassicDesc">1 impostor fijo. Deducción pura.</small>
+                    </button>
+                    <button class="btn mode-btn" data-mode="chaos" onclick="selectOnlineMode('chaos')">
+                        <strong data-i18n="chaos">Caos</strong>
+                        <small data-i18n="modeChaosDesc">Puede haber más impostores... ¡o todos serlo!</small>
+                    </button>
+                </div>
+            </div>
+
+            <div class="setup-buttons">
+                <button class="btn btn-secondary" onclick="showOnlineMenu()" data-i18n="back">VOLVER</button>
+                <button class="btn btn-primary btn-large" onclick="createRoom()" data-i18n="create_room">CREAR SALA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JOIN ROOM SCREEN ===== -->
+    <div id="screen-join-room" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="join_room">UNIRSE A SALA</h2>
+
+            <div class="setup-group">
+                <label data-i18n="enter_code">Código de sala</label>
+                <input type="text" id="join-code-input" class="online-input room-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters">
+            </div>
+
+            <div class="setup-group">
+                <label data-i18n="enter_name">Tu nombre</label>
+                <input type="text" id="join-name-input" class="online-input" placeholder="Tu nombre" maxlength="20">
+            </div>
+
+            <p id="join-error" class="error-message hidden"></p>
+
+            <div class="setup-buttons">
+                <button class="btn btn-secondary" onclick="showOnlineMenu()" data-i18n="back">VOLVER</button>
+                <button class="btn btn-primary btn-large" onclick="joinRoom()" data-i18n="join_room">UNIRSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LOBBY SCREEN ===== -->
+    <div id="screen-lobby" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="lobby_title">Sala</h2>
+            <div class="room-code-display">
+                <span data-i18n="room_code">Código:</span>
+                <span id="lobby-room-code" class="room-code-big"></span>
+            </div>
+            <div class="lobby-players">
+                <p data-i18n="waiting_players">Jugadores conectados:</p>
+                <div id="lobby-player-list" class="player-list"></div>
+            </div>
+            <p id="lobby-status" class="lobby-status"></p>
+            <div class="setup-buttons">
+                <button id="btn-start-online" class="btn btn-primary btn-large hidden" onclick="startOnlineGame()" data-i18n="startGame">INICIAR JUEGO</button>
+                <button class="btn btn-secondary" onclick="leaveLobby()" data-i18n="back">VOLVER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONLINE ROLE SCREEN ===== -->
+    <div id="screen-online-role" class="screen">
+        <div class="screen-content">
+            <div class="role-reveal">
+                <h2 id="online-role-title" class="role-title"></h2>
+                <div id="online-role-info"></div>
+                <p class="online-role-wait" data-i18n="waiting_roles">Esperando a que todos vean su rol...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONLINE DISCUSSION SCREEN (Turn-based) ===== -->
+    <div id="screen-online-discussion" class="screen">
+        <div class="screen-content">
+            <div class="turn-counter-badge" id="online-turn-counter-badge"></div>
+
+            <!-- Turn indicator -->
+            <div id="online-turn-indicator" class="turn-indicator">
+                <h2 id="online-turn-title" class="turn-active-title"></h2>
+                <p id="online-turn-hint" class="discussion-desc"></p>
+            </div>
+
+            <!-- Timer -->
+            <div class="timer timer-small">
+                <span id="online-timer-display" class="timer-display">0:30</span>
+            </div>
+
+            <!-- Ready button (only for active speaker) -->
+            <button id="btn-turn-ready" class="btn btn-primary btn-large hidden" onclick="onlineTurnReady()" data-i18n="turn_ready">LISTO</button>
+
+            <!-- Chat -->
+            <div class="chat-box">
+                <div id="chat-messages-discussion" class="chat-messages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input-discussion" class="chat-input" placeholder="Escribir mensaje..." maxlength="200" onkeydown="if(event.key==='Enter')sendChatFrom('discussion')">
+                    <button class="btn btn-chat-send" onclick="sendChatFrom('discussion')">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONLINE VOTE SCREEN ===== -->
+    <div id="screen-online-vote" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="voteTitle">Turno de votar</h2>
+            <p data-i18n="voteFor">¿Quién creés que es el impostor?</p>
+            <div id="online-vote-options" class="vote-options"></div>
+            <button class="btn btn-ghost" onclick="onlineSkipVote()" data-i18n="skipVote">Saltar voto</button>
+            <div id="online-vote-status" class="vote-status hidden">
+                <p id="online-vote-count" class="vote-count-text"></p>
+            </div>
+            <div class="chat-box">
+                <div id="chat-messages-vote" class="chat-messages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input-vote" class="chat-input" placeholder="Escribir mensaje..." maxlength="200" onkeydown="if(event.key==='Enter')sendChatFrom('vote')">
+                    <button class="btn btn-chat-send" onclick="sendChatFrom('vote')">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONLINE RESULTS SCREEN ===== -->
+    <div id="screen-online-results" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="resultsTitle">¡Resultados!</h2>
+            <div id="online-results-content"></div>
+            <div class="results-buttons">
+                <button id="btn-play-again-online" class="btn btn-primary btn-large hidden" onclick="onlinePlayAgain()" data-i18n="playAgain">JUGAR DE NUEVO</button>
+                <button class="btn btn-secondary" onclick="leaveGame()" data-i18n="backToMenu">VOLVER AL MENÚ</button>
             </div>
         </div>
     </div>
@@ -128,15 +322,29 @@
         </div>
     </div>
 
-    <!-- ===== DISCUSSION SCREEN ===== -->
-    <div id="screen-discussion" class="screen">
+    <!-- ===== DISCUSSION TURN SCREEN (Local) ===== -->
+    <div id="screen-discussion-turn" class="screen">
         <div class="screen-content">
-            <h2 data-i18n="discussionTitle">¡Tiempo de discusión!</h2>
-            <p class="discussion-desc" data-i18n="discussionDesc">Describan al futbolista. ¿Quién es el impostor?</p>
-            <div class="timer">
-                <span id="timer-display" class="timer-display">2:00</span>
+            <div class="turn-counter-badge" id="turn-counter-badge"></div>
+
+            <!-- Pass device phase -->
+            <div id="turn-pass-device" class="pass-device">
+                <span class="pass-icon">📱</span>
+                <p data-i18n="passDevice">Pásale el dispositivo a</p>
+                <h2 id="turn-player-name" class="player-highlight"></h2>
+                <button class="btn btn-primary btn-large pulse" onclick="revealTurn()" data-i18n="revealRole">REVELAR</button>
             </div>
-            <button class="btn btn-primary btn-large" onclick="goToVoting()" data-i18n="goToVote">IR A VOTACIÓN</button>
+
+            <!-- Active turn phase -->
+            <div id="turn-active-content" class="turn-active-content hidden">
+                <h2 id="turn-active-title" class="turn-active-title"></h2>
+                <p class="discussion-desc" data-i18n="describe_hint">Describí una característica del futbolista</p>
+                <div id="turn-role-reminder" class="turn-role-reminder"></div>
+                <div class="timer timer-small">
+                    <span id="turn-timer-display" class="timer-display">0:30</span>
+                </div>
+                <button class="btn btn-primary btn-large" onclick="nextDiscussionTurn()" data-i18n="next_player">SIGUIENTE JUGADOR</button>
+            </div>
         </div>
     </div>
 
@@ -170,9 +378,11 @@
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/players-db.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/socket-client.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
