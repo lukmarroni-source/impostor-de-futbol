@@ -17,12 +17,10 @@ src/index.html   # open in browser
 
 **Option B — Docker (recommended for prod-like environment):**
 ```bash
-docker compose up -d --build    # serves on http://localhost:8080
+docker compose up -d --build    # serves on http://localhost:8011
 docker compose down              # stop
 docker compose logs -f           # view logs
 ```
-
-For production, change port mapping in `docker-compose.yml` from `"8080:80"` to `"80:80"`.
 
 ## Architecture
 
@@ -54,3 +52,9 @@ Two modes: **Classic** (fixed impostor count) and **Chaos** (random 1-to-all imp
 ## Internationalization
 
 All UI text uses `data-i18n` attributes on HTML elements. Translations live in `i18n.js` as key-value maps. Language preference is stored in `localStorage`.
+
+## Infrastructure
+
+- **Docker**: `nginx:alpine` serving static files from `src/`
+- **Nginx**: SPA routing (`try_files $uri $uri/ /index.html`), 1-day cache for static assets
+- **No backend**: Entirely client-side
