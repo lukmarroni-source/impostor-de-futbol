@@ -10,6 +10,7 @@ class GameRoom {
       mode: settings.mode || 'classic',
       numImpostors: settings.numImpostors || 1
     };
+    this.isPublic = settings.isPublic || false;
     this.phase = 'lobby'; // lobby | roles | discussion | voting | results
     this.roles = [];
     this.selectedFootballer = null;
@@ -53,6 +54,17 @@ class GameRoom {
   getHostName() {
     const host = this.players.find(p => p.id === this.hostId);
     return host ? host.name : '';
+  }
+
+  getSummary() {
+    return {
+      code: this.code,
+      hostName: this.getHostName(),
+      playerCount: this.players.length,
+      maxPlayers: this.settings.maxPlayers,
+      mode: this.settings.mode,
+      isPublic: this.isPublic
+    };
   }
 
   startGame() {

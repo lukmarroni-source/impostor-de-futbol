@@ -1,3 +1,14 @@
+// ========== SAFE AUDIO STUBS (fallback if audio.js fails to load) ==========
+(function() {
+  var fns = ['initAudio','toggleMute','playBgMusic','stopBgMusic',
+    'sfxSplashIntro','sfxClick','sfxReveal','sfxImpostor','sfxNormal',
+    'sfxNextTurn','sfxTick','sfxVote','sfxWin','sfxLose','sfxChat',
+    'setMasterVolume','setMusicVolume','setSfxVolume','updateSettingsSliders'];
+  fns.forEach(function(name) {
+    if (typeof window[name] !== 'function') window[name] = function(){};
+  });
+})();
+
 // ========== SCREEN NAVIGATION ==========
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -23,11 +34,15 @@ function initHome() {
 
 // ========== SETTINGS SCREEN ==========
 function openSettings() {
+  sfxClick();
   showScreen('screen-settings');
   // Highlight current language
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.lang === getLang());
   });
+  // Sync audio sliders with current values
+  updateSettingsSliders();
+  updateMuteButton();
 }
 
 function selectLanguage(lang) {
@@ -90,6 +105,7 @@ function selectMode(mode) {
 }
 
 function goToNames() {
+  sfxClick();
   showScreen('screen-names');
   updateTexts();
   renderNameInputs();
@@ -111,6 +127,7 @@ function renderNameInputs() {
 }
 
 function startGame() {
+  sfxClick();
   const inputs = document.querySelectorAll('.player-name-input');
   const names = [];
   inputs.forEach(input => {
@@ -154,6 +171,7 @@ function showRolePass() {
 }
 
 function revealRole() {
+  sfxReveal();
   document.getElementById('btn-reveal-role').classList.add('hidden');
   const content = document.getElementById('role-reveal-content');
   content.classList.remove('hidden');
@@ -165,10 +183,12 @@ function revealRole() {
   const roleInfo = document.getElementById('role-info');
 
   if (isImp) {
+    setTimeout(sfxImpostor, 550);
     roleTitle.textContent = t('youAreImpostor');
     roleTitle.className = 'role-title impostor';
     roleInfo.innerHTML = `<p class="impostor-desc">${t('impostorDesc')}</p>`;
   } else {
+    setTimeout(sfxNormal, 550);
     roleTitle.textContent = t('youAreNormal');
     roleTitle.className = 'role-title normal';
 
@@ -188,6 +208,7 @@ function revealRole() {
 }
 
 function roleUnderstood() {
+  sfxClick();
   game.currentPlayerIndex++;
   showRolePass();
 }
@@ -216,12 +237,12 @@ function showDiscussionTurn() {
 
   if (turnTimer) clearInterval(turnTimer);
 
-  showScreen('screen-discussion-turn');
-  updateTexts();
-
   const name = game.players[game.currentPlayerIndex];
   const current = game.currentPlayerIndex + 1;
   const total = game.players.length;
+
+  showScreen('screen-discussion-turn');
+  updateTexts();
 
   // Update counter badge
   document.getElementById('turn-counter-badge').textContent =
@@ -234,6 +255,7 @@ function showDiscussionTurn() {
 }
 
 function revealTurn() {
+  sfxReveal();
   document.getElementById('turn-pass-device').classList.add('hidden');
   const content = document.getElementById('turn-active-content');
   content.classList.remove('hidden');
@@ -263,6 +285,7 @@ function revealTurn() {
   turnTimer = setInterval(() => {
     turnTimeLeft--;
     updateTurnTimerDisplay();
+    if (turnTimeLeft > 0 && turnTimeLeft <= 5) sfxTick();
     if (turnTimeLeft <= 0) {
       clearInterval(turnTimer);
       turnTimer = null;
@@ -279,6 +302,7 @@ function updateTurnTimerDisplay() {
 }
 
 function nextDiscussionTurn() {
+  sfxNextTurn();
   if (turnTimer) clearInterval(turnTimer);
   turnTimer = null;
   game.currentPlayerIndex++;
@@ -352,6 +376,7 @@ function showVoteOptions() {
 }
 
 function castVote(votedName) {
+  sfxVote();
   game.registerVote(game.currentPlayerIndex, votedName);
   game.currentPlayerIndex++;
   showVotePass();
@@ -406,8 +431,10 @@ function showResults() {
 
   // Who won
   if (results.normalWin) {
+    sfxWin();
     html += `<div class="winner-box normal-win"><h2>${t('normalWin')}</h2></div>`;
   } else {
+    sfxLose();
     const winText = results.impostorNames.length > 1 ? t('impostorsWin') : t('impostorWin');
     html += `<div class="winner-box impostor-win"><h2>${winText}</h2></div>`;
   }
@@ -440,11 +467,13 @@ function playAgain() {
 
 // ========== MODE SELECT ==========
 function showModeSelect() {
+  sfxClick();
   showScreen('screen-mode-select');
   updateTexts();
 }
 
 function selectGameMode(mode) {
+  sfxClick();
   gameMode = mode;
   if (mode === 'local') {
     openSetup();
@@ -463,21 +492,24 @@ function showOnlineMenu() {
 let onlineMaxPlayers = 6;
 let onlineNumImpostors = 1;
 let onlineMode = 'classic';
+let onlineIsPublic = false;
 
 function showCreateRoom() {
   onlineMaxPlayers = 6;
   onlineNumImpostors = 1;
   onlineMode = 'classic';
+  onlineIsPublic = false;
   showScreen('screen-create-room');
   updateTexts();
   renderOnlineSetup();
+  renderVisibilityToggle();
 }
 
 function renderOnlineSetup() {
   document.getElementById('online-max-players').textContent = onlineMaxPlayers;
   document.getElementById('online-num-impostors').textContent = onlineNumImpostors;
 
-  document.querySelectorAll('#screen-create-room .mode-btn').forEach(btn => {
+  document.querySelectorAll('#screen-create-room .mode-btn[data-mode]').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.mode === onlineMode);
   });
 
@@ -508,7 +540,18 @@ function selectOnlineMode(mode) {
   renderOnlineSetup();
 }
 
+function selectRoomVisibility(type) {
+  onlineIsPublic = (type === 'public');
+  renderVisibilityToggle();
+}
+
+function renderVisibilityToggle() {
+  document.getElementById('btn-private').classList.toggle('selected', !onlineIsPublic);
+  document.getElementById('btn-public').classList.toggle('selected', onlineIsPublic);
+}
+
 function createRoom() {
+  sfxClick();
   const nameInput = document.getElementById('host-name-input');
   const name = nameInput.value.trim();
   if (!name) {
@@ -519,7 +562,94 @@ function createRoom() {
     maxPlayers: onlineMaxPlayers,
     numImpostors: onlineNumImpostors,
     mode: onlineMode
+  }, onlineIsPublic);
+}
+
+// ========== BROWSE PUBLIC ROOMS ==========
+let browseRefreshInterval = null;
+
+function showBrowseRooms() {
+  sfxClick();
+  showScreen('screen-browse-rooms');
+  updateTexts();
+  refreshPublicRooms();
+
+  // Auto-refresh every 10 seconds
+  if (browseRefreshInterval) clearInterval(browseRefreshInterval);
+  browseRefreshInterval = setInterval(() => {
+    const currentScreen = document.querySelector('.screen.active');
+    if (currentScreen && currentScreen.id === 'screen-browse-rooms') {
+      refreshPublicRooms();
+    } else {
+      clearInterval(browseRefreshInterval);
+      browseRefreshInterval = null;
+    }
+  }, 10000);
+}
+
+function leaveBrowseRooms() {
+  if (browseRefreshInterval) {
+    clearInterval(browseRefreshInterval);
+    browseRefreshInterval = null;
+  }
+  socketDisconnect();
+  showOnlineMenu();
+}
+
+function refreshPublicRooms() {
+  const container = document.getElementById('public-room-list');
+  container.innerHTML = `<p class="no-rooms-msg loading-msg">...</p>`;
+
+  let responded = false;
+  const timeout = setTimeout(() => {
+    if (!responded) {
+      responded = true;
+      container.innerHTML = `<p class="no-rooms-msg">${t('error_connection')}</p>`;
+    }
+  }, 5000);
+
+  socketListPublicRooms((rooms) => {
+    if (responded) return;
+    responded = true;
+    clearTimeout(timeout);
+    renderPublicRoomList(rooms);
   });
+}
+
+function renderPublicRoomList(rooms) {
+  const container = document.getElementById('public-room-list');
+  if (!rooms || rooms.length === 0) {
+    container.innerHTML = `<p class="no-rooms-msg">${t('no_public_rooms')}</p>`;
+    return;
+  }
+
+  let html = '';
+  rooms.forEach(room => {
+    const modeLabel = t(room.mode);
+    html += `<div class="room-card">
+      <div class="room-card-info">
+        <span class="room-card-host">${escapeHtml(room.hostName)}</span>
+        <span class="room-card-details">${room.playerCount}/${room.maxPlayers} ${t('players_count')} · ${modeLabel}</span>
+      </div>
+      <button class="btn btn-primary btn-join" onclick="joinPublicRoom('${room.code}')">${t('join')}</button>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function joinPublicRoom(code) {
+  sfxClick();
+  const nameInput = document.getElementById('browse-name-input');
+  const name = nameInput.value.trim();
+  if (!name) {
+    nameInput.focus();
+    return;
+  }
+  if (browseRefreshInterval) {
+    clearInterval(browseRefreshInterval);
+    browseRefreshInterval = null;
+  }
+  socketJoinRoom(code, name);
 }
 
 // ========== JOIN ROOM ==========
@@ -530,6 +660,7 @@ function showJoinRoom() {
 }
 
 function joinRoom() {
+  sfxClick();
   const codeInput = document.getElementById('join-code-input');
   const nameInput = document.getElementById('join-name-input');
   const code = codeInput.value.trim().toUpperCase();
@@ -604,6 +735,7 @@ function updateLobbyPlayers(players, hostName) {
 }
 
 function startOnlineGame() {
+  sfxClick();
   socketStartGame();
 }
 
@@ -622,10 +754,12 @@ function showOnlineRole(data) {
   const roleInfo = document.getElementById('online-role-info');
 
   if (data.role === 'impostor') {
+    sfxImpostor();
     roleTitle.textContent = t('youAreImpostor');
     roleTitle.className = 'role-title impostor';
     roleInfo.innerHTML = `<p class="impostor-desc">${t('impostorDesc')}</p>`;
   } else {
+    sfxNormal();
     roleTitle.textContent = t('youAreNormal');
     roleTitle.className = 'role-title normal';
 
@@ -665,6 +799,7 @@ let onlineTurnTimeLeft = 0;
 let onlineTurnTimer = null;
 
 function showOnlineDiscussionTurn(data) {
+  sfxNextTurn();
   showScreen('screen-online-discussion');
   updateTexts();
 
@@ -705,6 +840,7 @@ function showOnlineDiscussionTurn(data) {
   onlineTurnTimer = setInterval(() => {
     onlineTurnTimeLeft--;
     updateOnlineTimerDisplay(onlineTurnTimeLeft);
+    if (onlineTurnTimeLeft > 0 && onlineTurnTimeLeft <= 5) sfxTick();
     if (onlineTurnTimeLeft <= 0) {
       clearInterval(onlineTurnTimer);
       onlineTurnTimer = null;
@@ -756,6 +892,7 @@ function showOnlineVoteScreen() {
 
 function onlineCastVote(votedName) {
   if (hasVotedOnline) return;
+  sfxVote();
   hasVotedOnline = true;
   socketVote(votedName);
 
@@ -836,8 +973,10 @@ function showOnlineResults(results) {
 
   // Who won
   if (results.normalWin) {
+    sfxWin();
     html += `<div class="winner-box normal-win"><h2>${t('normalWin')}</h2></div>`;
   } else {
+    sfxLose();
     const winText = results.impostorNames.length > 1 ? t('impostorsWin') : t('impostorWin');
     html += `<div class="winner-box impostor-win"><h2>${winText}</h2></div>`;
   }
@@ -888,6 +1027,7 @@ function sendChatFrom(screen) {
 
 function appendChatMessage(name, text) {
   const isMe = name === onlinePlayerName;
+  if (!isMe) sfxChat();
   const msgHtml = `<div class="chat-msg ${isMe ? 'chat-msg-me' : ''}"><span class="chat-msg-name">${name}</span><span class="chat-msg-text">${escapeHtml(text)}</span></div>`;
 
   // Append to all visible chat containers
@@ -943,11 +1083,29 @@ function handleOnlineError(message) {
 
 // ========== INIT ==========
 document.addEventListener('DOMContentLoaded', () => {
-  // Show splash for 2.5 seconds, then fade out and go to home
-  setTimeout(() => {
+  // Init audio on first user interaction (autoplay policy)
+  // Clicking/tapping the splash triggers intro sound + music
+  const startAudio = () => {
+    initAudio();
+    document.removeEventListener('click', startAudio);
+    document.removeEventListener('touchstart', startAudio);
+  };
+  document.addEventListener('click', startAudio);
+  document.addEventListener('touchstart', startAudio);
+
+  // Splash: tap anywhere to skip, or auto-advance after 3s
+  let splashDone = false;
+  function endSplash() {
+    if (splashDone) return;
+    splashDone = true;
     document.getElementById('splash-logo').classList.add('fade-out');
     setTimeout(() => {
       initHome();
     }, 600);
-  }, 2500);
+  }
+  document.getElementById('screen-splash').addEventListener('click', function() {
+    startAudio();
+    endSplash();
+  });
+  setTimeout(endSplash, 3000);
 });

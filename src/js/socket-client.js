@@ -109,10 +109,15 @@ function connectSocket() {
   });
 }
 
-function socketCreateRoom(name, settings) {
+function socketCreateRoom(name, settings, isPublic) {
   connectSocket();
   onlinePlayerName = name;
-  socket.emit('create-room', { name, settings });
+  socket.emit('create-room', { name, settings, isPublic });
+}
+
+function socketListPublicRooms(callback) {
+  connectSocket();
+  socket.emit('list-public-rooms', callback);
 }
 
 function socketJoinRoom(code, name) {

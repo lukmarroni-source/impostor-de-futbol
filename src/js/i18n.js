@@ -86,7 +86,16 @@ const TRANSLATIONS = {
     turn_ready: "LISTO",
     turn_counter: "Turno {current} de {total}",
     waiting_turn: "Esperando...",
-    turns_done: "¡Todos hablaron!"
+    turns_done: "¡Todos hablaron!",
+    // Public/Private rooms
+    room_visibility: "Visibilidad",
+    private_room: "Privada",
+    public_room: "Publica",
+    browse_rooms: "SALAS PUBLICAS",
+    no_public_rooms: "No hay salas publicas",
+    refresh: "REFRESCAR",
+    players_count: "jugadores",
+    join: "UNIRSE"
   },
   en: {
     title: "FOOTBALL IMPOSTOR",
@@ -175,7 +184,16 @@ const TRANSLATIONS = {
     turn_ready: "READY",
     turn_counter: "Turn {current} of {total}",
     waiting_turn: "Waiting...",
-    turns_done: "Everyone has spoken!"
+    turns_done: "Everyone has spoken!",
+    // Public/Private rooms
+    room_visibility: "Visibility",
+    private_room: "Private",
+    public_room: "Public",
+    browse_rooms: "PUBLIC ROOMS",
+    no_public_rooms: "No public rooms",
+    refresh: "REFRESH",
+    players_count: "players",
+    join: "JOIN"
   }
 };
 

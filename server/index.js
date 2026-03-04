@@ -94,9 +94,10 @@ io.on('connection', (socket) => {
   console.log(`[connect] ${socket.id}`);
   let currentRoom = null;
 
-  socket.on('create-room', ({ name, settings }) => {
+  socket.on('create-room', ({ name, settings, isPublic }) => {
     const code = generateCode();
-    console.log(`[create-room] ${name} created room ${code}`, settings);
+    console.log(`[create-room] ${name} created room ${code} (public: ${!!isPublic})`, settings);
+    settings.isPublic = !!isPublic;
     const room = new GameRoom(code, socket.id, name, settings);
     rooms.set(code, room);
     currentRoom = code;
@@ -107,6 +108,18 @@ io.on('connection', (socket) => {
       players: room.getPlayerNames(),
       hostName: room.getHostName()
     });
+  });
+
+  socket.on('list-public-rooms', (callback) => {
+    if (typeof callback !== 'function') return;
+    const publicRooms = [];
+    for (const [code, room] of rooms) {
+      if (room.isPublic && room.phase === 'lobby' && room.players.length < room.settings.maxPlayers) {
+        publicRooms.push(room.getSummary());
+      }
+    }
+    console.log(`[list-public-rooms] Found ${publicRooms.length} public rooms`);
+    callback(publicRooms);
   });
 
   socket.on('join-room', ({ code, name }) => {

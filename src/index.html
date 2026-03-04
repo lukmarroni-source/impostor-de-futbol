@@ -58,6 +58,7 @@
             <div class="menu-buttons">
                 <button class="btn btn-primary btn-large" onclick="showCreateRoom()" data-i18n="create_room">CREAR SALA</button>
                 <button class="btn btn-primary btn-large" onclick="showJoinRoom()" data-i18n="join_room">UNIRSE A SALA</button>
+                <button class="btn btn-primary btn-large btn-browse" onclick="showBrowseRooms()" data-i18n="browse_rooms">SALAS PUBLICAS</button>
             </div>
             <button class="btn btn-secondary" onclick="showModeSelect()" data-i18n="back">VOLVER</button>
         </div>
@@ -68,7 +69,7 @@
         <div class="screen-content">
             <h2 data-i18n="create_room">CREAR SALA</h2>
 
-            <div class="setup-group">
+            <div class="setup-group inline-name">
                 <label data-i18n="your_name">Tu nombre</label>
                 <input type="text" id="host-name-input" class="online-input" placeholder="Tu nombre" maxlength="20">
             </div>
@@ -105,6 +106,18 @@
                 </div>
             </div>
 
+            <div class="setup-group visibility-toggle">
+                <label data-i18n="room_visibility">Visibilidad</label>
+                <div class="mode-buttons">
+                    <button id="btn-private" class="btn mode-btn selected" onclick="selectRoomVisibility('private')">
+                        <strong data-i18n="private_room">Privada</strong>
+                    </button>
+                    <button id="btn-public" class="btn mode-btn" onclick="selectRoomVisibility('public')">
+                        <strong data-i18n="public_room">Publica</strong>
+                    </button>
+                </div>
+            </div>
+
             <div class="setup-buttons">
                 <button class="btn btn-secondary" onclick="showOnlineMenu()" data-i18n="back">VOLVER</button>
                 <button class="btn btn-primary btn-large" onclick="createRoom()" data-i18n="create_room">CREAR SALA</button>
@@ -122,7 +135,7 @@
                 <input type="text" id="join-code-input" class="online-input room-code-input" placeholder="ABCD" maxlength="4" autocapitalize="characters">
             </div>
 
-            <div class="setup-group">
+            <div class="setup-group inline-name">
                 <label data-i18n="enter_name">Tu nombre</label>
                 <input type="text" id="join-name-input" class="online-input" placeholder="Tu nombre" maxlength="20">
             </div>
@@ -132,6 +145,25 @@
             <div class="setup-buttons">
                 <button class="btn btn-secondary" onclick="showOnlineMenu()" data-i18n="back">VOLVER</button>
                 <button class="btn btn-primary btn-large" onclick="joinRoom()" data-i18n="join_room">UNIRSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BROWSE ROOMS SCREEN ===== -->
+    <div id="screen-browse-rooms" class="screen">
+        <div class="screen-content">
+            <h2 data-i18n="browse_rooms">SALAS PUBLICAS</h2>
+
+            <div class="setup-group">
+                <label data-i18n="enter_name">Tu nombre</label>
+                <input type="text" id="browse-name-input" class="online-input" placeholder="Tu nombre" maxlength="20">
+            </div>
+
+            <div id="public-room-list" class="room-list"></div>
+
+            <div class="setup-buttons">
+                <button class="btn btn-secondary" onclick="leaveBrowseRooms()" data-i18n="back">VOLVER</button>
+                <button class="btn btn-primary" onclick="refreshPublicRooms()" data-i18n="refresh">REFRESCAR</button>
             </div>
         </div>
     </div>
@@ -244,6 +276,43 @@
                     </button>
                 </div>
             </div>
+
+            <div class="settings-group">
+                <label data-i18n="sound">Volumen y Sonido</label>
+
+                <div class="sound-control">
+                    <span class="sound-label" data-i18n="master_volume">Volumen general</span>
+                    <div class="slider-row">
+                        <span class="slider-icon">🔈</span>
+                        <input type="range" id="slider-master" class="audio-slider" min="0" max="100" value="100" oninput="setMasterVolume(this.value)">
+                        <span class="slider-icon">🔊</span>
+                        <span id="master-vol-value" class="slider-value">100%</span>
+                    </div>
+                </div>
+
+                <div class="sound-control">
+                    <span class="sound-label" data-i18n="music_volume">Música</span>
+                    <div class="slider-row">
+                        <span class="slider-icon">🎵</span>
+                        <input type="range" id="slider-music" class="audio-slider" min="0" max="100" value="100" oninput="setMusicVolume(this.value)">
+                        <span id="music-vol-value" class="slider-value">100%</span>
+                    </div>
+                </div>
+
+                <div class="sound-control">
+                    <span class="sound-label" data-i18n="sfx_volume">Efectos</span>
+                    <div class="slider-row">
+                        <span class="slider-icon">🔔</span>
+                        <input type="range" id="slider-sfx" class="audio-slider" min="0" max="100" value="100" oninput="setSfxVolume(this.value)">
+                        <span id="sfx-vol-value" class="slider-value">100%</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary btn-sound-toggle" onclick="toggleMute()">
+                    <span id="mute-toggle-label">🔊 <span data-i18n="sound_on">Sonido ON</span></span>
+                </button>
+            </div>
+
             <button class="btn btn-secondary" onclick="initHome()" data-i18n="back">VOLVER</button>
         </div>
     </div>
@@ -286,7 +355,7 @@
             </div>
 
             <div class="setup-buttons">
-                <button class="btn btn-secondary" onclick="initHome()" data-i18n="back">VOLVER</button>
+                <button class="btn btn-secondary" onclick="showModeSelect()" data-i18n="back">VOLVER</button>
                 <button class="btn btn-primary btn-large" onclick="goToNames()" data-i18n="next">SIGUIENTE</button>
             </div>
         </div>
@@ -378,10 +447,14 @@
         </div>
     </div>
 
+    <!-- Mute button (fixed, outside screens) -->
+    <button id="btn-mute" class="btn-mute" onclick="toggleMute()">🔊</button>
+
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/players-db.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/audio.js"></script>
     <script src="js/socket-client.js"></script>
     <script src="js/app.js"></script>
 </body>
