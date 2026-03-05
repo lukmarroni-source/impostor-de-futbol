@@ -686,10 +686,20 @@ function showLobby() {
   document.getElementById('lobby-room-code').textContent = onlineRoomCode;
 }
 
-function updateLobbyPlayers(players, hostName) {
-  // If we're on join screen, move to lobby
+let lobbyMaxPlayers = 0;
+
+function updateLobbyPlayers(players, hostName, maxPlayers) {
+  // Track maxPlayers if provided
+  if (maxPlayers) lobbyMaxPlayers = maxPlayers;
+
+  // If we're on join screen or browse screen, move to lobby
   const currentScreen = document.querySelector('.screen.active');
-  if (currentScreen && currentScreen.id === 'screen-join-room') {
+  if (currentScreen && (currentScreen.id === 'screen-join-room' || currentScreen.id === 'screen-browse-rooms')) {
+    // Clear browse refresh interval if coming from browse
+    if (browseRefreshInterval) {
+      clearInterval(browseRefreshInterval);
+      browseRefreshInterval = null;
+    }
     showLobby();
   }
 
@@ -723,12 +733,14 @@ function updateLobbyPlayers(players, hostName) {
     startBtn.classList.add('hidden');
   }
 
-  // Update lobby status
+  // Update lobby status with player count info
   const status = document.getElementById('lobby-status');
-  if (!isHost) {
+  const remaining = lobbyMaxPlayers - players.length;
+  if (remaining > 0) {
+    const countText = `${players.length}/${lobbyMaxPlayers} - ${t('players_remaining').replace('{n}', remaining)}`;
+    status.textContent = countText;
+  } else if (!isHost) {
     status.textContent = t('waiting_host');
-  } else if (players.length < 3) {
-    status.textContent = t('need_more_players');
   } else {
     status.textContent = '';
   }

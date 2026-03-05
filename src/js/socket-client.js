@@ -6,7 +6,14 @@ let isHost = false;
 let onlinePlayerList = []; // Store player list for voting
 
 function connectSocket() {
-  if (socket && socket.connected) return;
+  // Reuse existing socket if connected or still connecting
+  if (socket && (socket.connected || socket.connecting)) return;
+
+  // Clean up old disconnected socket
+  if (socket) {
+    socket.removeAllListeners();
+    socket = null;
+  }
 
   // Connect to same host (nginx proxies /socket.io/ to server)
   socket = io({ transports: ['polling', 'websocket'] });
@@ -36,16 +43,16 @@ function connectSocket() {
     showLobby();
   });
 
-  socket.on('player-joined', ({ players, hostName }) => {
+  socket.on('player-joined', ({ players, hostName, maxPlayers }) => {
     console.log('[socket] Player joined. Players:', players);
     onlinePlayerList = players;
-    updateLobbyPlayers(players, hostName);
+    updateLobbyPlayers(players, hostName, maxPlayers);
   });
 
-  socket.on('player-left', ({ players, hostName, name }) => {
+  socket.on('player-left', ({ players, hostName, name, maxPlayers }) => {
     console.log('[socket] Player left:', name);
     onlinePlayerList = players;
-    updateLobbyPlayers(players, hostName);
+    updateLobbyPlayers(players, hostName, maxPlayers);
   });
 
   socket.on('game-started', (data) => {
@@ -83,10 +90,10 @@ function connectSocket() {
     showOnlineResults(results);
   });
 
-  socket.on('back-to-lobby', ({ players, hostName }) => {
+  socket.on('back-to-lobby', ({ players, hostName, maxPlayers }) => {
     console.log('[socket] Back to lobby');
     onlinePlayerList = players;
-    updateLobbyPlayers(players, hostName);
+    updateLobbyPlayers(players, hostName, maxPlayers);
     showScreen('screen-lobby');
     updateTexts();
   });
@@ -117,7 +124,13 @@ function socketCreateRoom(name, settings, isPublic) {
 
 function socketListPublicRooms(callback) {
   connectSocket();
-  socket.emit('list-public-rooms', callback);
+  // Use event-based pattern (more reliable than ack callback with polling transport)
+  const handler = (rooms) => {
+    socket.off('public-rooms-list', handler);
+    callback(rooms);
+  };
+  socket.on('public-rooms-list', handler);
+  socket.emit('list-public-rooms');
 }
 
 function socketJoinRoom(code, name) {

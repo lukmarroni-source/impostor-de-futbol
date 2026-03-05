@@ -106,12 +106,12 @@ io.on('connection', (socket) => {
     socket.emit('room-created', { code });
     io.to(code).emit('player-joined', {
       players: room.getPlayerNames(),
-      hostName: room.getHostName()
+      hostName: room.getHostName(),
+      maxPlayers: room.settings.maxPlayers
     });
   });
 
   socket.on('list-public-rooms', (callback) => {
-    if (typeof callback !== 'function') return;
     const publicRooms = [];
     for (const [code, room] of rooms) {
       if (room.isPublic && room.phase === 'lobby' && room.players.length < room.settings.maxPlayers) {
@@ -119,7 +119,11 @@ io.on('connection', (socket) => {
       }
     }
     console.log(`[list-public-rooms] Found ${publicRooms.length} public rooms`);
-    callback(publicRooms);
+    // Support both ack callback and event-based response
+    if (typeof callback === 'function') {
+      callback(publicRooms);
+    }
+    socket.emit('public-rooms-list', publicRooms);
   });
 
   socket.on('join-room', ({ code, name }) => {
@@ -149,35 +153,34 @@ io.on('connection', (socket) => {
 
     io.to(upperCode).emit('player-joined', {
       players: room.getPlayerNames(),
-      hostName: room.getHostName()
+      hostName: room.getHostName(),
+      maxPlayers: room.settings.maxPlayers
     });
+
+    // Auto-start when room is full (public rooms)
+    if (room.isPublic && room.players.length >= room.settings.maxPlayers) {
+      console.log(`[auto-start] Room ${upperCode} is full, starting game automatically`);
+      startGameForRoom(upperCode);
+    }
   });
 
-  socket.on('start-game', () => {
-    console.log(`[start-game] from ${socket.id}, room: ${currentRoom}`);
-    if (!currentRoom) return;
-    const room = rooms.get(currentRoom);
+  // Helper to start game for a room
+  function startGameForRoom(roomCode) {
+    const room = rooms.get(roomCode);
     if (!room) return;
-
-    // Only host can start
-    if (socket.id !== room.hostId) {
-      console.log(`[start-game] Not host, ignoring`);
-      return;
-    }
 
     const result = room.startGame();
     if (result.error) {
       console.log(`[start-game] Error: ${result.error}`);
-      socket.emit('error', { message: result.error });
       return;
     }
 
-    console.log(`[start-game] Game started in room ${currentRoom}. Players: ${room.getPlayerNames()}, Impostors: ${room.getImpostorNames()}`);
+    console.log(`[start-game] Game started in room ${roomCode}. Players: ${room.getPlayerNames()}, Impostors: ${room.getImpostorNames()}`);
 
     // Check if everyone is impostor (chaos mode)
     if (room.isEveryoneImpostor()) {
       console.log(`[start-game] Everyone is impostor!`);
-      io.to(currentRoom).emit('all-impostors', {
+      io.to(roomCode).emit('all-impostors', {
         footballer: room.selectedFootballer
       });
       return;
@@ -192,16 +195,29 @@ io.on('connection', (socket) => {
 
     // Start discussion turns after a delay for players to read their role
     setTimeout(() => {
-      if (!rooms.has(currentRoom)) return;
+      if (!rooms.has(roomCode)) return;
       room.phase = 'discussion';
       room.currentSpeaker = 0;
       const speakerData = room.getCurrentSpeakerData();
-      console.log(`[discussion] Starting turns in room ${currentRoom}. First speaker: ${speakerData.currentPlayer}`);
-      io.to(currentRoom).emit('turn-update', speakerData);
-
-      // Auto-advance timer
-      startTurnTimer(currentRoom);
+      console.log(`[discussion] Starting turns in room ${roomCode}. First speaker: ${speakerData.currentPlayer}`);
+      io.to(roomCode).emit('turn-update', speakerData);
+      startTurnTimer(roomCode);
     }, 10000);
+  }
+
+  socket.on('start-game', () => {
+    console.log(`[start-game] from ${socket.id}, room: ${currentRoom}`);
+    if (!currentRoom) return;
+    const room = rooms.get(currentRoom);
+    if (!room) return;
+
+    // Only host can start
+    if (socket.id !== room.hostId) {
+      console.log(`[start-game] Not host, ignoring`);
+      return;
+    }
+
+    startGameForRoom(currentRoom);
   });
 
   socket.on('vote', ({ votedName }) => {
@@ -290,7 +306,8 @@ io.on('connection', (socket) => {
     room.resetForNewGame();
     io.to(currentRoom).emit('back-to-lobby', {
       players: room.getPlayerNames(),
-      hostName: room.getHostName()
+      hostName: room.getHostName(),
+      maxPlayers: room.settings.maxPlayers
     });
   });
 
@@ -325,7 +342,8 @@ io.on('connection', (socket) => {
     io.to(currentRoom).emit('player-left', {
       players: room.getPlayerNames(),
       hostName: room.getHostName(),
-      name: playerName
+      name: playerName,
+      maxPlayers: room.settings.maxPlayers
     });
 
     // If in voting phase and all remaining votes are in, send results
